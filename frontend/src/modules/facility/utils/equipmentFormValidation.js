@@ -1,0 +1,220 @@
+const PHOTO_DATA_URL_PATTERN = /^data:image\/(?:jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=\r\n]+$/i;
+const PHOTO_FILE_EXTENSION_PATTERN = /\.(jpg|jpeg|png|webp)$/i;
+const GENERATED_ASSET_ID_PATTERN = /^F\d{3}-\d{3}-\d{3}$/;
+const LEGACY_ASSET_ID_PATTERN = /^TR-[A-Z]{3}-\d{4}$/;
+const ALLOWED_PHOTO_MIME_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+
+const EQUIPMENT_FORM_VALIDATORS = [
+  {
+    isInvalid: (form) => form.equipmentName.length < 2,
+    message: 'Equipment name must be at least 2 characters.',
+  },
+  {
+    isInvalid: (form) => form.equipmentCategory === '',
+    message: 'Equipment type/category is required.',
+  },
+  {
+    isInvalid: (form) => form.equipmentBrand.length < 2,
+    message: 'Equipment brand must be at least 2 characters.',
+  },
+  {
+    isInvalid: (form) => form.equipmentModel.length < 1,
+    message: 'Equipment model is required.',
+  },
+  {
+    isInvalid: (form) => !Number.isInteger(form.availableQuantity) || form.availableQuantity <= 0,
+    message: 'Available quantity must be a whole number greater than zero.',
+  },
+  {
+    isInvalid: (form) => form.operationalStatus === '',
+    message: 'Operational status is required.',
+  },
+  {
+    isInvalid: (form) => form.description === '',
+    message: 'Description is required.',
+  },
+  {
+    isInvalid: (form) => !Array.isArray(form.specifications) || form.specifications.length === 0,
+    message: 'At least one equipment specification is required.',
+  },
+  {
+    isInvalid: (form) => !Array.isArray(form.units) || form.units.length === 0,
+    message: 'At least one equipment unit is required.',
+  },
+  {
+    isInvalid: (form) => Array.isArray(form.units) && form.units.length !== form.availableQuantity,
+    message: 'Available quantity must match the number of equipment unit rows.',
+  },
+  {
+    isInvalid: (form) => Array.isArray(form.units) && form.units.some((unit) => unit.barcode === ''),
+    message: 'Every equipment unit must have a barcode.',
+  },
+  {
+    isInvalid: (form) => Array.isArray(form.units) && form.units.some((unit) => unit.assetTag === ''),
+    message: 'Every equipment unit must have an asset tag.',
+  },
+  {
+    isInvalid: (form) => Array.isArray(form.units) && form.units.some((unit) => unit.conditionStatus === ''),
+    message: 'Every equipment unit must have a condition status.',
+  },
+  {
+    isInvalid: (form) => Array.isArray(form.units) && form.units.some((unit) => unit.storageLocation === ''),
+    message: 'Every equipment unit must have a storage location.',
+  },
+  {
+    isInvalid: (form) => Boolean(form.assetId) && !isSupportedAssetId(form.assetId),
+    message: 'Asset ID must match the F123-456-789 format.',
+  },
+  {
+    isInvalid: (form) => Boolean(form.photoData) && PHOTO_DATA_URL_PATTERN.test(form.photoData) !== true,
+    message: 'Equipment photo must be a valid JPG, PNG, or WebP image.',
+  },
+];
+
+export function normalizeEquipmentForm(form) {
+  const assetId = String(form?.assetId ?? form?.serialNumber ?? '').trim();
+
+  const normalizedAssetId = assetId.toUpperCase();
+
+  return {
+    equipmentName: String(form?.equipmentName || '').trim(),
+    equipmentCategory: String(form?.equipmentCategory || '').trim(),
+    equipmentBrand: String(form?.equipmentBrand || '').trim(),
+    equipmentModel: String(form?.equipmentModel || '').trim(),
+    availableQuantity: Number(form?.availableQuantity ?? 0),
+    operationalStatus: String(form?.operationalStatus || '').trim(),
+    description: String(form?.description || '').trim(),
+    remarks: String(form?.remarks || '').trim(),
+    specifications: normalizeEquipmentSpecifications(form?.specifications),
+    units: normalizeEquipmentUnits(form?.units),
+    barcode: String(form?.barcode || '').trim(),
+    assetId: normalizedAssetId,
+    serialNumber: normalizedAssetId,
+    photoData: normalizeOptionalPhotoData(form?.photoData),
+    photoDisplayMode: normalizePhotoDisplayMode(form?.photoDisplayMode),
+    photoPositionX: normalizePhotoPosition(form?.photoPositionX),
+    photoPositionY: normalizePhotoPosition(form?.photoPositionY),
+  };
+}
+
+export function validateEquipmentForm(form) {
+  const normalizedForm = normalizeEquipmentForm(form);
+  const duplicateUnitIdentifierMessage = validateDuplicateUnitIdentifiers(normalizedForm.units);
+  if (duplicateUnitIdentifierMessage) {
+    return duplicateUnitIdentifierMessage;
+  }
+  const failedRule = EQUIPMENT_FORM_VALIDATORS.find(({ isInvalid }) => isInvalid(normalizedForm));
+  return failedRule?.message || '';
+}
+
+export function validateEquipmentPhotoFile(file) {
+  if (!file) {
+    return '';
+  }
+
+  if (!isJpgPhotoFile(file)) {
+    return 'Equipment photo must be a JPG, PNG, or WebP image.';
+  }
+
+  return '';
+}
+
+export function readPhotoFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Unable to read the selected equipment photo.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function normalizeOptionalPhotoData(photoData) {
+  const normalizedValue = String(photoData || '').trim();
+  return normalizedValue === '' ? null : normalizedValue;
+}
+
+function isJpgPhotoFile(file) {
+  const fileName = String(file?.name || '');
+  return PHOTO_FILE_EXTENSION_PATTERN.test(fileName) && ALLOWED_PHOTO_MIME_TYPES.has(String(file?.type || '').toLowerCase());
+}
+
+function isSupportedAssetId(assetId) {
+  return GENERATED_ASSET_ID_PATTERN.test(assetId) || LEGACY_ASSET_ID_PATTERN.test(assetId);
+}
+
+function normalizePhotoDisplayMode(value) {
+  return String(value || '').trim().toLowerCase() === 'cover' ? 'cover' : 'contain';
+}
+
+function normalizePhotoPosition(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return 50;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(numericValue)));
+}
+
+function normalizeEquipmentSpecifications(specifications) {
+  if (!Array.isArray(specifications)) {
+    return [];
+  }
+
+  return specifications
+    .map((item) => ({
+      key: String(item?.key || '').trim(),
+      value: String(item?.value || '').trim(),
+    }))
+    .filter((item) => item.key !== '' || item.value !== '');
+}
+
+function normalizeEquipmentUnits(units) {
+  if (!Array.isArray(units)) {
+    return [];
+  }
+
+  return units.map((unit, index) => ({
+    equipmentUnitIdentifierCode: String(unit?.equipmentUnitIdentifierCode || unit?.unitCode || `UNIT-${index + 1}`).trim(),
+    barcode: String(unit?.barcode || '').trim(),
+    assetTag: String(unit?.assetTag || '').trim(),
+    serialNumber: String(unit?.serialNumber || '').trim(),
+    conditionStatus: String(unit?.conditionStatus || 'Good').trim(),
+    availabilityStatus: String(unit?.availabilityStatus || 'Available').trim(),
+    storageLocation: String(unit?.storageLocation || '').trim(),
+    dateAcquired: String(unit?.dateAcquired || '').trim(),
+    warrantyDetails: String(unit?.warrantyDetails || '').trim(),
+    remarks: String(unit?.remarks || '').trim(),
+    maintenanceState: String(unit?.maintenanceState || 'Operational').trim(),
+  }));
+}
+
+function validateDuplicateUnitIdentifiers(units) {
+  if (!Array.isArray(units)) {
+    return '';
+  }
+
+  const seen = new Set();
+  const fields = [
+    ['unit code', 'equipmentUnitIdentifierCode'],
+    ['barcode', 'barcode'],
+    ['asset tag', 'assetTag'],
+    ['serial number', 'serialNumber'],
+  ];
+
+  for (const unit of units) {
+    for (const [label, key] of fields) {
+      const value = String(unit?.[key] || '').trim().toLowerCase();
+      if (value === '') {
+        continue;
+      }
+
+      const fingerprint = `${key}:${value}`;
+      if (seen.has(fingerprint)) {
+        return `Duplicate ${label} found in the equipment units.`;
+      }
+      seen.add(fingerprint);
+    }
+  }
+
+  return '';
+}

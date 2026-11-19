@@ -1,0 +1,151 @@
+name: "techreserve"
+
+services:
+  database:
+    image: postgres:15-alpine
+    container_name: techreserve_database
+    env_file:
+      - .env.dev
+    ports:
+      - "${POSTGRES_EXTERNAL_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-techreserve_user} -d $${POSTGRES_DB:-techreserve}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: techreserve_backend
+    env_file:
+      - .env.dev
+    volumes:
+      - backend_var:/app/var
+      - backend_vendor:/app/vendor
+    ports:
+      - "${BACKEND_EXTERNAL_PORT:-8000}:8000"
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+      POSTGRES_HOST: database
+      ANALYTICS_SERVICE_URL: "http://analytics-service:9000"
+      TEXTBEE_API_KEY: "${TEXTBEE_API_KEY:-}"
+      TEXTBEE_DEVICE_ID: "${TEXTBEE_DEVICE_ID:-}"
+      API_KEY: "${API_KEY:-}"
+      DEVICE_ID: "${DEVICE_ID:-}"
+      MAILER_DSN: "${MAILER_DSN:-null://null}"
+      MESSENGER_TRANSPORT_DSN: "${MESSENGER_TRANSPORT_DSN:-sync://}"
+      RUN_MIGRATIONS_ON_BOOT: "${RUN_MIGRATIONS_ON_BOOT:-1}"
+    depends_on:
+      database:
+        condition: service_healthy
+      analytics-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php -r '$$socket = @fsockopen(\"127.0.0.1\", 8000); if (!$$socket) exit(1); fclose($$socket);'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /app
+          ignore:
+            - var/
+            - vendor/
+            - config/reference.php
+        - action: sync+restart
+          path: ./backend/composer.json
+          target: /app/composer.json
+        - action: sync+restart
+          path: ./backend/composer.lock
+          target: /app/composer.lock
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: techreserve_pgadmin
+    env_file:
+      - .env.dev
+    environment:
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "${PGADMIN_EXTERNAL_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      database:
+        condition: service_healthy
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: analytics-service/Dockerfile
+    container_name: techreserve_analytics_service
+    command: uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload
+    volumes:
+      - ./analytics-service/app:/app/app
+      - ./docs/demo-seeds:/app/demo-seeds:ro
+      - ./analytics-service/models:/app/models
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-techreserve_user}:${POSTGRES_PASSWORD:-techreserve_pass}@database:5432/${POSTGRES_DB:-techreserve}"
+      ANALYTICS_DAILY_CRON_HOUR: "${ANALYTICS_DAILY_CRON_HOUR:-2}"
+      ANALYTICS_DAILY_CRON_MINUTE: "${ANALYTICS_DAILY_CRON_MINUTE:-0}"
+      ANALYTICS_WEEKLY_TRAINING_DAY_OF_WEEK: "${ANALYTICS_WEEKLY_TRAINING_DAY_OF_WEEK:-sun}"
+      ANALYTICS_WEEKLY_TRAINING_HOUR: "${ANALYTICS_WEEKLY_TRAINING_HOUR:-1}"
+      ANALYTICS_WEEKLY_TRAINING_MINUTE: "${ANALYTICS_WEEKLY_TRAINING_MINUTE:-0}"
+      ANALYTICS_MODEL_DIR: "${ANALYTICS_MODEL_DIR:-/app/models}"
+      ANALYTICS_SCHEDULER_ENABLED: "${ANALYTICS_SCHEDULER_ENABLED:-true}"
+    expose:
+      - "9000"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/health', timeout=2).read()\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: techreserve_frontend
+    command: sh -c "if [ ! -d node_modules/.package-lock.json ] || [ package.json -nt node_modules/.package-lock.json ]; then npm install; fi && npm run dev -- --host 0.0.0.0 --port 5173"
+    env_file:
+      - .env.dev
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "100"
+      VITE_API_PROXY_TARGET: "http://backend:8000"
+    ports:
+      - "${FRONTEND_EXTERNAL_PORT:-5173}:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /app
+        - action: sync+restart
+          path: ./frontend/package.json
+          target: /app/package.json
+        - action: sync+restart
+          path: ./frontend/package-lock.json
+          target: /app/package-lock.json
+
+volumes:
+  postgres_data:
+  frontend_node_modules:
+  backend_var:
+  backend_vendor:
+  pgadmin_data:

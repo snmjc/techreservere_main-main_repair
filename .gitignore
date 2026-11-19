@@ -1,0 +1,9 @@
+# Ignore local environment files (keep template committed)
+.env
+.env.*
+!example.env
+!.env.dev.example
+node_modules
+analytics-service/models/**
+!analytics-service/models/
+!analytics-service/models/.gitkeep

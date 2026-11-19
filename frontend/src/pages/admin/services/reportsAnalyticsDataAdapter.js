@@ -1,0 +1,428 @@
+export function createEmptyReport() {
+  const emptyUtilization = createEmptyUtilizationReport();
+
+  return {
+    forecast: createEmptyForecastReport(),
+    riskDistribution: createEmptyRiskReport(),
+    optimizationMetrics: [],
+    utilizationByCategory: emptyUtilization.items,
+    utilizationComparisonByCategory: emptyUtilization.comparisonItems,
+    topEquipment: emptyUtilization.topEquipment,
+    possibleBorrowedEquipment: emptyUtilization.possibleBorrowedEquipment,
+    equipmentTrendPagination: emptyUtilization.equipmentTrendPagination,
+    summary: createEmptySummaryReport(),
+  };
+}
+
+export function createEmptyForecastReport() {
+  return {
+    modelName: '',
+    forecastMethod: '',
+    status: '',
+    usesPriorYearHistory: false,
+    historicalWeight: 0,
+    actualSeries: [],
+    forecastSeries: [],
+    historySeries: [],
+    peakDate: null,
+    peakValue: 0,
+    growthPercent: 0,
+    accuracyMetrics: createEmptyForecastAccuracyMetrics(),
+  };
+}
+
+export function createEmptyForecastAccuracyMetrics() {
+  return {
+    sarimaMape: null,
+    naiveMape: null,
+    seasonalNaiveMape: null,
+    forecastImprovementPercent: null,
+    accuracyStatus: 'insufficient_data',
+    benchmarkMethod: 'naive',
+    zeroDemandExcluded: 0,
+    evaluatedPeriods: 0,
+    evaluationStartDate: '',
+    evaluationEndDate: '',
+  };
+}
+
+export function createEmptyRiskReport() {
+  return {
+    bands: [],
+    topRiskFactors: [],
+    highRiskEquipment: [],
+    safeRate: 0,
+    modelMetrics: {},
+    riskProbabilitySummary: {},
+  };
+}
+
+export function createEmptyUtilizationReport() {
+  return {
+    items: [],
+    comparisonItems: [],
+    topEquipment: [],
+    possibleBorrowedEquipment: [],
+    equipmentTrendPagination: createEmptyEquipmentTrendPagination(),
+  };
+}
+
+export function createEmptyEquipmentTrendPagination() {
+  return {
+    topEquipment: createEmptyPaginationState(),
+    preparationDecisions: createEmptyPaginationState(),
+  };
+}
+
+function createEmptyPaginationState() {
+  return {
+    page: 1,
+    pageSize: 5,
+    totalItems: 0,
+    availableItems: 0,
+    totalPages: 1,
+    maxPages: 5,
+  };
+}
+
+export function createEmptySummaryReport() {
+  return {
+    totalEquipment: 0,
+    activeReservations: 0,
+    pendingRequests: 0,
+    completedThisPeriod: 0,
+    generatedAt: 'Not generated',
+  };
+}
+
+export function hasRiskDistribution(riskDistribution) {
+  return Array.isArray(riskDistribution?.bands) && riskDistribution.bands.length > 0;
+}
+
+export function normalizeStoredAnalyticsResponse(response) {
+  const analyticsRun = response?.analyticsServiceResponse || response || {};
+  const payloadByType = buildAnalyticsPayloadMap(analyticsRun.results);
+  const requiredPayloads = ['forecast', 'readiness', 'allocation'];
+  const missingPayloads = requiredPayloads.filter((key) => !payloadByType[key]);
+  if (missingPayloads.length > 0) {
+    throw new Error(`FastAPI analytics response is missing: ${missingPayloads.join(', ')}.`);
+  }
+
+  const normalized = createEmptyReport();
+
+  normalized.forecast = normalizeForecastPayload(resolveForecastPayload(payloadByType));
+  normalized.riskDistribution = normalizeReadinessPayload(resolveReadinessPayload(payloadByType));
+
+  const allocationAnalytics = normalizeAllocationPayload(resolveAllocationPayload(payloadByType), analyticsRun);
+  normalized.optimizationMetrics = allocationAnalytics.optimizationMetrics;
+  normalized.utilizationByCategory = allocationAnalytics.utilizationByCategory;
+  normalized.utilizationComparisonByCategory = allocationAnalytics.utilizationComparisonByCategory;
+  normalized.topEquipment = allocationAnalytics.topEquipment;
+  normalized.possibleBorrowedEquipment = allocationAnalytics.possibleBorrowedEquipment;
+  normalized.equipmentTrendPagination = allocationAnalytics.equipmentTrendPagination;
+  normalized.summary = allocationAnalytics.summary;
+
+  return normalized;
+}
+
+export function normalizeForecastSectionResponse(response) {
+  return normalizeForecastPayload(resolveSectionPayload(response, 'forecast'));
+}
+
+export function normalizeReadinessSectionResponse(response) {
+  return normalizeReadinessPayload(resolveSectionPayload(response, 'readiness'));
+}
+
+export function normalizeAllocationSectionResponse(response) {
+  const analyticsRun = response?.analyticsServiceResponse || response || {};
+  return normalizeAllocationPayload(resolveSectionPayload(response, 'allocation'), analyticsRun);
+}
+
+function resolveSectionPayload(response, fallbackType) {
+  const analyticsRun = response?.analyticsServiceResponse || response || {};
+  if (analyticsRun.result && typeof analyticsRun.result === 'object') {
+    return analyticsRun.result;
+  }
+
+  const payloadByType = buildAnalyticsPayloadMap(analyticsRun.results);
+  switch (fallbackType) {
+    case 'forecast':
+      return resolveForecastPayload(payloadByType);
+    case 'readiness':
+      return resolveReadinessPayload(payloadByType);
+    case 'allocation':
+      return resolveAllocationPayload(payloadByType);
+    default:
+      return {};
+  }
+}
+
+function buildAnalyticsPayloadMap(resultList) {
+  if (resultList && !Array.isArray(resultList) && typeof resultList === 'object') {
+    return Object.fromEntries(
+      Object.entries(resultList).map(([resultType, payload]) => [
+        String(resultType).toLowerCase(),
+        payload || {},
+      ]),
+    );
+  }
+
+  if (!Array.isArray(resultList)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    resultList.map((result) => [
+      String(result?.result_type || result?.resultType || '').toLowerCase(),
+      result?.result_payload || result?.resultPayload || {},
+    ]),
+  );
+}
+
+function resolveForecastPayload(payloadByType) {
+  return payloadByType.sarima || payloadByType.forecast || {};
+}
+
+function resolveReadinessPayload(payloadByType) {
+  return payloadByType.random_forest || payloadByType.readiness || {};
+}
+
+function resolveAllocationPayload(payloadByType) {
+  return payloadByType.bilp || payloadByType.binary_linear_programming || payloadByType.allocation || {};
+}
+
+function normalizeForecastPayload(forecastPayload) {
+  const forecastPeak = forecastPayload.forecastPeak || forecastPayload.forecast_peak || {};
+  const summary = forecastPayload.summary || {};
+  const accuracyMetrics = forecastPayload.accuracyMetrics || forecastPayload.accuracy_metrics || {};
+
+  return {
+    modelName: forecastPayload.modelName || forecastPayload.model_name || '',
+    forecastMethod: forecastPayload.forecastMethod || forecastPayload.forecast_method || '',
+    status: forecastPayload.status || '',
+    usesPriorYearHistory: Boolean(
+      forecastPayload.usesPriorYearHistory ?? forecastPayload.uses_prior_year_history ?? false
+    ),
+    historicalWeight: Number(
+      forecastPayload.historicalWeight ?? forecastPayload.historical_weight ?? 0
+    ),
+    actualSeries: (forecastPayload.actualSeries || forecastPayload.actual_series || []).map(normalizeSeriesPoint),
+    forecastSeries: (forecastPayload.forecastSeries || forecastPayload.forecast_series || []).map(normalizeSeriesPoint),
+    historySeries: (forecastPayload.historySeries || forecastPayload.history_series || []).map(normalizeSeriesPoint),
+    peakDate: forecastPayload.peakDate || forecastPayload.peak_date || forecastPeak.date || '',
+    peakValue: Number(forecastPayload.peakValue || forecastPayload.peak_value || forecastPeak.value || 0),
+    growthPercent: Number(
+      forecastPayload.growthPercent
+      || forecastPayload.growth_percent
+      || summary.expectedChangePercent
+      || summary.expected_change_percent
+      || 0
+    ),
+    accuracyMetrics: normalizeForecastAccuracyMetrics(accuracyMetrics, summary),
+  };
+}
+
+function normalizeReadinessPayload(readinessPayload) {
+  return {
+    bands: normalizeBands(readinessPayload),
+    topRiskFactors: readinessPayload.topRiskFactors || readinessPayload.top_risk_factors || [],
+    highRiskEquipment: readinessPayload.highRiskEquipment || readinessPayload.high_risk_equipment || [],
+    safeRate: Number(readinessPayload.safeRate || readinessPayload.safe_rate || 0),
+    modelMetrics: readinessPayload.modelMetrics || readinessPayload.model_metrics || {},
+    riskProbabilitySummary: readinessPayload.riskProbabilitySummary || readinessPayload.risk_probability_summary || {},
+  };
+}
+
+function normalizeForecastAccuracyMetrics(accuracyMetrics, summary) {
+  return {
+    sarimaMape: nullableNumber(accuracyMetrics.sarimaMape ?? accuracyMetrics.sarima_mape ?? summary.sarimaMape ?? summary.sarima_mape),
+    naiveMape: nullableNumber(accuracyMetrics.naiveMape ?? accuracyMetrics.naive_mape ?? summary.naiveMape ?? summary.naive_mape),
+    seasonalNaiveMape: nullableNumber(
+      accuracyMetrics.seasonalNaiveMape
+      ?? accuracyMetrics.seasonal_naive_mape
+      ?? summary.seasonalNaiveMape
+      ?? summary.seasonal_naive_mape
+    ),
+    forecastImprovementPercent: nullableNumber(
+      accuracyMetrics.forecastImprovementPercent
+      ?? accuracyMetrics.forecast_improvement_percent
+      ?? summary.forecastImprovementPercent
+      ?? summary.forecast_improvement_percent
+    ),
+    accuracyStatus: accuracyMetrics.accuracyStatus || accuracyMetrics.accuracy_status || summary.accuracyStatus || summary.accuracy_status || 'insufficient_data',
+    benchmarkMethod: accuracyMetrics.benchmarkMethod || accuracyMetrics.benchmark_method || 'naive',
+    zeroDemandExcluded: Number(accuracyMetrics.zeroDemandExcluded || accuracyMetrics.zero_demand_excluded || 0),
+    evaluatedPeriods: Number(accuracyMetrics.evaluatedPeriods || accuracyMetrics.evaluated_periods || 0),
+    evaluationStartDate: accuracyMetrics.evaluationStartDate || accuracyMetrics.evaluation_start_date || '',
+    evaluationEndDate: accuracyMetrics.evaluationEndDate || accuracyMetrics.evaluation_end_date || '',
+  };
+}
+
+function nullableNumber(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function normalizeAllocationPayload(allocationPayload, response) {
+  return {
+    optimizationMetrics: normalizeOptimizationMetrics(allocationPayload),
+    utilizationByCategory: allocationPayload.utilizationByCategory || allocationPayload.utilization_by_category || [],
+    utilizationComparisonByCategory: allocationPayload.utilizationComparisonByCategory
+      || allocationPayload.utilization_comparison_by_category
+      || [],
+    topEquipment: allocationPayload.topEquipment || allocationPayload.top_equipment || [],
+    possibleBorrowedEquipment: allocationPayload.possibleBorrowedEquipment
+      || allocationPayload.possible_borrowed_equipment
+      || [],
+    equipmentTrendPagination: normalizeEquipmentTrendPagination(
+      allocationPayload.equipmentTrendPagination || allocationPayload.equipment_trend_pagination || {},
+    ),
+    summary: normalizeAllocationSummary(allocationPayload, response),
+  };
+}
+
+function normalizeEquipmentTrendPagination(paginationPayload) {
+  return {
+    topEquipment: normalizePaginationState(
+      paginationPayload.topEquipment || paginationPayload.top_equipment || {},
+    ),
+    preparationDecisions: normalizePaginationState(
+      paginationPayload.preparationDecisions || paginationPayload.preparation_decisions || {},
+    ),
+  };
+}
+
+function normalizePaginationState(paginationState) {
+  const pageSize = Number(paginationState.pageSize || paginationState.page_size || 5);
+  return {
+    page: Number(paginationState.page || 1),
+    pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 5,
+    totalItems: Number(paginationState.totalItems || paginationState.total_items || 0),
+    availableItems: Number(paginationState.availableItems || paginationState.available_items || 0),
+    totalPages: Math.max(1, Number(paginationState.totalPages || paginationState.total_pages || 1)),
+    maxPages: Math.max(1, Number(paginationState.maxPages || paginationState.max_pages || 5)),
+  };
+}
+
+function normalizeAllocationSummary(allocationPayload, response) {
+  return {
+    totalEquipment: Number(allocationPayload.summary?.totalEquipment || allocationPayload.summary?.total_equipment || 0),
+    activeReservations: Number(allocationPayload.summary?.activeReservations || allocationPayload.summary?.active_reservations || 0),
+    pendingRequests: Number(allocationPayload.summary?.pendingRequests || allocationPayload.summary?.pending_requests || 0),
+    completedThisPeriod: Number(allocationPayload.summary?.completedThisPeriod || allocationPayload.summary?.completed_this_period || 0),
+    generatedAt: response?.completedAt || response?.startedAt || response?.run?.started_at || response?.run?.startedAt || 'Not generated',
+  };
+}
+
+function normalizeSeriesPoint(item) {
+  return {
+    date: item?.date || item?.label || '',
+    label: item?.label || item?.date || '',
+    value: Number(item?.value || 0),
+  };
+}
+
+function normalizeBands(readinessPayload) {
+  const sourceBands = readinessPayload.bands || readinessPayload.riskBands || readinessPayload.risk_bands || [];
+  if (Array.isArray(sourceBands) && sourceBands.length > 0) {
+    return sourceBands;
+  }
+
+  const records = Array.isArray(readinessPayload.records) ? readinessPayload.records : [];
+  const counts = {
+    'High Risk': 0,
+    'Medium Risk': 0,
+    'Low Risk': 0,
+    'Very Low Risk': 0,
+  };
+
+  records.forEach((record) => {
+    const ratio = Number(record?.availabilityRatio || 0);
+    if (ratio >= 0.8) counts['Very Low Risk'] += 1;
+    else if (ratio >= 0.5) counts['Low Risk'] += 1;
+    else if (ratio >= 0.25) counts['Medium Risk'] += 1;
+    else counts['High Risk'] += 1;
+  });
+
+  return [
+    { label: 'High Risk', count: counts['High Risk'], color: '#ef4444' },
+    { label: 'Medium Risk', count: counts['Medium Risk'], color: '#f59e0b' },
+    { label: 'Low Risk', count: counts['Low Risk'], color: '#facc15' },
+    { label: 'Very Low Risk', count: counts['Very Low Risk'], color: '#16a34a' },
+  ];
+}
+
+function normalizeOptimizationMetrics(allocationPayload) {
+  const sourceMetrics = allocationPayload.optimizationMetrics || allocationPayload.optimization_metrics || [];
+  if (Array.isArray(sourceMetrics) && sourceMetrics.length > 0) {
+    return sourceMetrics;
+  }
+
+  const allocationPlan = allocationPayload.allocationPlan || allocationPayload.allocation_plan || [];
+  const hasAllocationData = Array.isArray(allocationPlan)
+    || Array.isArray(allocationPayload.utilizationByCategory)
+    || Array.isArray(allocationPayload.utilization_by_category)
+    || Number(allocationPayload.fulfilledCount || allocationPayload.fulfilled_count || 0) > 0
+    || Number(allocationPayload.pendingRequestCount || allocationPayload.pending_request_count || 0) > 0;
+
+  if (!hasAllocationData) {
+    return [];
+  }
+
+  const currentUtilization = averageMetricValue(
+    allocationPayload.utilizationByCategory || allocationPayload.utilization_by_category || [],
+  );
+  const previousUtilization = averageMetricValue(
+    allocationPayload.utilizationComparisonByCategory || allocationPayload.utilization_comparison_by_category || [],
+  );
+  const fulfilledCount = Number(allocationPayload.fulfilledCount || allocationPayload.fulfilled_count || 0);
+  const pendingCount = Number(allocationPayload.pendingRequestCount || allocationPayload.pending_request_count || 0);
+  const totalDecisionCount = fulfilledCount + pendingCount;
+  const resolvedRate = totalDecisionCount > 0 ? (fulfilledCount / totalDecisionCount) * 100 : 0;
+
+  return [
+    {
+      label: 'Conflict Reduction',
+      note: 'stored scenario',
+      value: 0,
+      icon: 'CR',
+      tone: 'tree',
+    },
+    {
+      label: 'Equipment Utilization',
+      note: 'vs. last year same days',
+      value: roundMetricValue(currentUtilization - previousUtilization),
+      icon: 'EU',
+      tone: 'box',
+    },
+    {
+      label: 'Constraint Satisfaction',
+      note: 'requests resolved',
+      value: roundMetricValue(resolvedRate),
+      icon: 'CS',
+      tone: 'check',
+    },
+    {
+      label: 'Unassigned Requests',
+      note: 'pending stored requests',
+      value: pendingCount,
+      icon: 'UR',
+      tone: 'alert',
+    },
+  ];
+}
+
+function averageMetricValue(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return 0;
+  }
+
+  return items.reduce((sum, item) => sum + Number(item?.value || 0), 0) / items.length;
+}
+
+function roundMetricValue(value) {
+  return Math.round(Number(value || 0) * 10) / 10;
+}

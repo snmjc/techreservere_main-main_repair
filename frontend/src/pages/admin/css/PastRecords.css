@@ -1,0 +1,1148 @@
+.admin-past-records-page {
+  --admin-records-ink: #17211d;
+  --admin-records-muted: #60706a;
+  --admin-records-line: #dce7e1;
+  --admin-records-panel: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 252, 250, 0.96));
+  --admin-records-shadow: 0 18px 36px rgba(15, 23, 42, 0.06);
+  min-height: 100%;
+  color: var(--admin-records-ink);
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  font-family: inherit;
+}
+
+.admin-past-records-hero,
+.admin-past-records-stat-card,
+.admin-past-records-table-card,
+.admin-past-records-detail-card,
+.admin-past-records-toolbar,
+.admin-past-records-filter-strip {
+  background:
+    radial-gradient(circle at top right, rgba(207, 245, 220, 0.18), transparent 28%),
+    var(--admin-records-panel);
+  border: 1px solid var(--admin-records-line);
+  box-shadow: var(--admin-records-shadow);
+}
+
+.admin-past-records-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  border-radius: 24px;
+  padding: 1.45rem 1.55rem;
+}
+
+.admin-past-records-kicker {
+  margin: 0 0 0.35rem;
+  color: #0d7d57;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.admin-past-records-hero h1 {
+  margin: 0;
+  color: #132238;
+  font-size: clamp(1.85rem, 3vw, 2.45rem);
+  line-height: 1.05;
+  font-weight: 900;
+}
+
+.admin-past-records-hero-copy p:last-child {
+  margin: 0.55rem 0 0;
+  max-width: 760px;
+  color: var(--admin-records-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.admin-past-records-hero-badge {
+  min-width: 170px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #132238, #1c3f2f);
+  color: #f8fbff;
+}
+
+.admin-past-records-hero-badge strong {
+  display: block;
+  font-size: 2rem;
+}
+
+.admin-past-records-hero-badge span {
+  display: block;
+  margin-top: 6px;
+  color: rgba(248, 251, 255, 0.82);
+  font-size: 0.82rem;
+}
+
+.admin-past-records-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.admin-past-records-stat-card {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 20px;
+  border-radius: 22px;
+}
+
+.admin-past-records-stat-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  flex: 0 0 auto;
+}
+
+.admin-past-records-stat-icon :deep(svg) {
+  width: 22px;
+  height: 22px;
+}
+
+.admin-past-records-stat-card p,
+.admin-past-records-stat-card small {
+  margin: 0;
+}
+
+.admin-past-records-stat-card p {
+  color: var(--admin-records-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.admin-past-records-stat-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #132238;
+  font-size: 1.9rem;
+  font-weight: 900;
+}
+
+.admin-past-records-stat-card small {
+  display: block;
+  margin-top: 6px;
+  color: var(--admin-records-muted);
+  font-size: 0.77rem;
+}
+
+.admin-past-records-stat-card--total .admin-past-records-stat-icon {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+}
+
+.admin-past-records-stat-card--completed .admin-past-records-stat-icon {
+  background: rgba(16, 185, 129, 0.14);
+  color: #059669;
+}
+
+.admin-past-records-stat-card--rejected .admin-past-records-stat-icon {
+  background: rgba(239, 68, 68, 0.14);
+  color: #dc2626;
+}
+
+.admin-past-records-stat-card--cancelled .admin-past-records-stat-icon {
+  background: rgba(245, 158, 11, 0.18);
+  color: #d97706;
+}
+
+.admin-past-records-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(292px, 0.76fr);
+  gap: 20px;
+  margin-top: 20px;
+  align-items: start;
+}
+
+.admin-past-records-main {
+  min-width: 0;
+}
+
+.admin-past-records-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: 22px;
+  padding: 18px;
+}
+
+.admin-past-records-search-field,
+.admin-past-records-toolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-past-records-search-field {
+  flex: 1 1 auto;
+}
+
+.admin-past-records-search-field span,
+.admin-past-records-toolbar label span {
+  color: var(--admin-records-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-past-records-search-field input,
+.admin-past-records-toolbar select {
+  height: 46px;
+  border: 1px solid #d8e3dd;
+  border-radius: 14px;
+  padding: 0 14px;
+  background: #fff;
+  color: var(--admin-records-ink);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.admin-past-records-toolbar-controls {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.admin-past-records-toolbar-actions {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.admin-past-records-action-button {
+  height: 46px;
+  padding: 0 16px;
+  border: 1px solid #0c8048;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #0d9a56, #0c8048);
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-past-records-action-button--ghost {
+  background: #fff;
+  color: #0c8048;
+}
+
+.admin-past-records-sort-toggle {
+  height: 46px;
+  padding: 0 16px;
+  border: 1px solid #1c3f2f;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #0d9a56, #0c8048);
+  color: #fff;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-past-records-filter-strip {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-radius: 22px;
+  padding: 14px;
+  margin-top: 16px;
+}
+
+.admin-past-records-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(24, 47, 84, 0.1);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--admin-records-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-past-records-filter-pill span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(16, 33, 68, 0.08);
+  font-size: 0.76rem;
+}
+
+.admin-past-records-filter-pill--active {
+  background: linear-gradient(135deg, #0d7d57, #14b86e);
+  color: #fff;
+  border-color: transparent;
+}
+
+.admin-past-records-filter-pill--active span {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.admin-past-records-table-card {
+  margin-top: 16px;
+  border-radius: 24px;
+  overflow: hidden;
+  min-height: 640px;
+}
+
+.admin-past-records-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-past-records-table thead th {
+  padding: 18px 16px;
+  text-align: left;
+  color: #315447;
+  font-size: 0.75rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--admin-records-line);
+  background: #eff5f1;
+}
+
+.admin-past-records-row {
+  cursor: pointer;
+  transition: background-color 0.16s ease;
+}
+
+.admin-past-records-row:hover,
+.admin-past-records-row--active {
+  background: rgba(15, 118, 110, 0.06);
+}
+
+.admin-past-records-table td {
+  padding: 16px;
+  border-bottom: 1px solid rgba(220, 231, 225, 0.9);
+  vertical-align: middle;
+  font-size: 0.86rem;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.admin-past-records-id {
+  font-weight: 800;
+  color: #0d7d57;
+}
+
+.admin-past-records-borrower {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-past-records-borrower > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-past-records-borrower img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(13, 125, 87, 0.12);
+}
+
+.admin-past-records-borrower strong,
+.admin-past-records-borrower span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.admin-past-records-borrower span {
+  margin-top: 3px;
+  color: var(--admin-records-muted);
+  font-size: 0.78rem;
+}
+
+.admin-past-records-type-pill,
+.admin-past-records-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 11px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-past-records-type-pill--venue {
+  background: rgba(34, 197, 94, 0.14);
+  color: #15803d;
+}
+
+.admin-past-records-type-pill--equipment {
+  background: rgba(59, 130, 246, 0.14);
+  color: #1d4ed8;
+}
+
+.admin-past-records-type-pill--mixed {
+  background: rgba(168, 85, 247, 0.14);
+  color: #7c3aed;
+}
+
+.admin-past-records-status-pill--completed {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.admin-past-records-status-pill--rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+}
+
+.admin-past-records-status-pill--cancelled {
+  background: rgba(245, 158, 11, 0.18);
+  color: #b45309;
+}
+
+.admin-past-records-empty-state {
+  padding: 44px 16px;
+  text-align: center;
+  color: var(--admin-records-muted);
+}
+
+.admin-past-records-table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  color: var(--admin-records-muted);
+  font-size: 0.82rem;
+}
+
+.admin-past-records-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0 18px 18px;
+}
+
+.admin-past-records-pagination button {
+  min-height: 40px;
+  padding: 0 0.95rem;
+  border: 1px solid #d8e3dd;
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--admin-records-ink);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-past-records-pagination button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.admin-past-records-detail-card {
+  align-self: start;
+  border-radius: 28px;
+  padding: 18px;
+  position: sticky;
+  top: 18px;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-past-records-detail-card--placeholder {
+  justify-content: center;
+}
+
+.admin-past-records-detail-topbar,
+.admin-past-records-detail-statusbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.admin-past-records-detail-topbar p,
+.admin-past-records-detail-section dt,
+.admin-past-records-timeline small,
+.admin-past-records-detail-empty p {
+  color: var(--admin-records-muted);
+}
+
+.admin-past-records-detail-topbar p,
+.admin-past-records-detail-empty p {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+}
+
+.admin-past-records-detail-topbar h2,
+.admin-past-records-detail-empty h2 {
+  margin: 8px 0 0;
+  color: #132238;
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.admin-past-records-detail-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d8e3dd;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--admin-records-ink);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-past-records-detail-statusbar {
+  margin-top: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(24, 47, 84, 0.08);
+  align-items: center;
+}
+
+.admin-past-records-detail-statusbar strong {
+  font-size: 0.96rem;
+}
+
+.admin-past-records-detail-section,
+.admin-past-records-detail-empty {
+  border: 1px solid rgba(220, 231, 225, 0.9);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.admin-past-records-detail-empty {
+  text-align: center;
+}
+
+.admin-past-records-detail-empty span {
+  display: block;
+  margin-top: 12px;
+  color: var(--admin-records-muted);
+  line-height: 1.7;
+}
+
+.admin-past-records-detail-section {
+  margin-top: 14px;
+}
+
+.admin-past-records-detail-section h3 {
+  margin: 0 0 12px;
+  color: #132238;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.admin-past-records-detail-section dl,
+.admin-past-records-detail-section dd {
+  margin: 0;
+}
+
+.admin-past-records-detail-list {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-past-records-detail-item {
+  display: grid;
+  grid-template-columns: 94px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(24, 47, 84, 0.08);
+}
+
+.admin-past-records-detail-item--remarks {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.admin-past-records-detail-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.admin-past-records-detail-section dt {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+}
+
+.admin-past-records-detail-section dd {
+  color: var(--admin-records-ink);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.admin-past-records-detail-remarks {
+  padding: 10px 12px;
+  border: 1px solid rgba(220, 231, 225, 0.95);
+  border-radius: 12px;
+  background: rgba(246, 250, 248, 0.95);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: left;
+}
+
+.admin-past-records-detail-borrower {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-past-records-detail-borrower img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.admin-past-records-detail-borrower span {
+  min-width: 0;
+}
+
+.admin-past-records-detail-borrower strong,
+.admin-past-records-detail-borrower small {
+  display: block;
+}
+
+.admin-past-records-detail-borrower small {
+  color: var(--admin-records-muted);
+}
+
+.admin-past-records-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 0;
+  display: grid;
+  gap: 16px;
+}
+
+.admin-past-records-timeline li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 12px;
+  position: relative;
+}
+
+.admin-past-records-timeline li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 20px;
+  bottom: -16px;
+  width: 2px;
+  background: rgba(20, 184, 110, 0.2);
+}
+
+.admin-past-records-timeline-dot {
+  width: 12px;
+  height: 12px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d7d57, #14b86e);
+  box-shadow: 0 0 0 5px rgba(20, 184, 110, 0.12);
+}
+
+.admin-past-records-timeline strong,
+.admin-past-records-timeline small,
+.admin-past-records-timeline p {
+  display: block;
+}
+
+.admin-past-records-timeline strong {
+  font-size: 0.84rem;
+}
+
+.admin-past-records-timeline small {
+  margin-top: 4px;
+  font-size: 0.72rem;
+}
+
+.admin-past-records-timeline p {
+  margin: 4px 0 0;
+  color: var(--admin-records-ink);
+  font-size: 0.82rem;
+  line-height: 1.42;
+}
+
+.admin-past-records-detail-download {
+  margin-top: 18px;
+  width: 100%;
+  min-height: 50px;
+  border: 1px solid #0c8048;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #0d9a56, #0c8048);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-past-records-page-footer {
+  margin-top: 22px;
+  text-align: center;
+  color: var(--admin-records-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.admin-past-records-report-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.admin-past-records-report-modal {
+  position: relative;
+  width: min(840px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 0.95rem 1.1rem 1.05rem;
+  border: 1px solid #d9e7dd;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top right, rgba(221, 242, 229, 0.95), transparent 22%),
+    linear-gradient(135deg, #ffffff, #fbfdfb 45%, #f6fbf8 100%);
+  box-shadow: 0 26px 80px rgba(15, 23, 42, 0.22);
+}
+
+.admin-past-records-report-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #10211a;
+  font: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-past-records-report-header {
+  padding-right: 2.2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e4ece7;
+}
+
+.admin-past-records-report-title-group {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.admin-past-records-report-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #f1f8f4, #e5f2e9);
+  color: #0f8b57;
+  box-shadow: inset 0 0 0 1px rgba(15, 139, 87, 0.08);
+}
+
+.admin-past-records-report-icon :deep(svg) {
+  width: 22px;
+  height: 22px;
+}
+
+.admin-past-records-report-header h2 {
+  margin: 0;
+  color: #10211a;
+  font-size: 1.55rem;
+  font-weight: 900;
+}
+
+.admin-past-records-report-header p {
+  margin: 0.3rem 0 0;
+  color: #44544c;
+  font-size: 0.86rem;
+}
+
+.admin-past-records-report-builder {
+  display: grid;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+.admin-past-records-report-section {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.admin-past-records-report-section--framed {
+  padding: 1rem 0 0;
+  border-top: 1px solid #e4ece7;
+}
+
+.admin-past-records-report-section--wide {
+  grid-column: 1 / -1;
+}
+
+.admin-past-records-report-step {
+  color: #11281d;
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.admin-past-records-report-timeframe-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.admin-past-records-report-timeframe {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 68px;
+  padding: 0.8rem 0.85rem 0.8rem 0.75rem;
+  color: #15231b;
+  background: #ffffff;
+  border: 1px solid #d8e6dc;
+  border-radius: 14px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-align: left;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.admin-past-records-report-timeframe-icon,
+.admin-past-records-report-field-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: #f7f8f7;
+  color: #10211a;
+}
+
+.admin-past-records-report-timeframe-icon :deep(svg),
+.admin-past-records-report-field-icon :deep(svg),
+.admin-past-records-report-note-icon :deep(svg),
+.admin-past-records-report-button-icon :deep(svg) {
+  width: 15px;
+  height: 15px;
+}
+
+.admin-past-records-report-timeframe-indicator {
+  margin-left: auto;
+  width: 15px;
+  height: 15px;
+  border: 2px solid #c9d4cd;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.admin-past-records-report-timeframe--active {
+  color: #0f6f49;
+  background: linear-gradient(180deg, #f0faf4, #eef8f2);
+  border-color: #1d9b63;
+  box-shadow: 0 0 0 3px rgba(29, 155, 99, 0.12);
+}
+
+.admin-past-records-report-timeframe--active .admin-past-records-report-timeframe-icon {
+  background: #dff3e7;
+  color: #0f8b57;
+}
+
+.admin-past-records-report-timeframe--active .admin-past-records-report-timeframe-indicator {
+  border-color: #0f8b57;
+  box-shadow: inset 0 0 0 4px #ffffff;
+  background: #0f8b57;
+}
+
+.admin-past-records-report-date-stack {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-past-records-report-field {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 1px solid #d8e6dc;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.admin-past-records-report-field--date {
+  max-width: 230px;
+}
+
+.admin-past-records-report-field input,
+.admin-past-records-report-field select {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #15231b;
+  font: inherit;
+  font-size: 0.83rem;
+  font-weight: 700;
+}
+
+.admin-past-records-report-help {
+  margin: 0;
+  color: #4e5d56;
+  font-size: 0.76rem;
+}
+
+.admin-past-records-report-options-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.15fr) minmax(220px, 0.9fr);
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.admin-past-records-report-select,
+.admin-past-records-report-checkbox {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-past-records-report-select > span,
+.admin-past-records-report-checkbox > span {
+  color: #11281d;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.admin-past-records-report-checkbox-card {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  background: #ffffff;
+  border: 1px solid #d8e6dc;
+  border-radius: 12px;
+}
+
+.admin-past-records-report-checkbox-card input {
+  width: 16px;
+  height: 16px;
+  accent-color: #0f8b57;
+}
+
+.admin-past-records-report-checkbox-card strong {
+  color: #15231b;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.admin-past-records-report-error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.admin-past-records-report-footer {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.admin-past-records-report-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+
+.admin-past-records-report-button {
+  min-height: 42px;
+  padding: 0 0.95rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #0d8c55, #0a7445);
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.admin-past-records-report-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-past-records-report-button--secondary {
+  border-color: #d9e3dd;
+  background: #ffffff;
+  color: #10211a;
+}
+
+.admin-past-records-report-note {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #e0ece4;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f6fbf8, #f1f8f4);
+  color: #174f36;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-past-records-report-note-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  border-radius: 10px;
+  background: #dbf1e4;
+  color: #0f8b57;
+}
+
+.admin-past-records-report-button-icon {
+  display: grid;
+  place-items: center;
+}
+
+@media (max-width: 1200px) {
+  .admin-past-records-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-past-records-detail-card {
+    position: static;
+  }
+}
+
+@media (max-width: 980px) {
+  .admin-past-records-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-past-records-hero,
+  .admin-past-records-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-past-records-toolbar-controls,
+  .admin-past-records-toolbar-actions {
+    flex-wrap: wrap;
+  }
+
+  .admin-past-records-report-timeframe-grid,
+  .admin-past-records-report-options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-past-records-report-note {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-past-records-page {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .admin-past-records-stats,
+  .admin-past-records-detail-item {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-past-records-table thead {
+    display: none;
+  }
+
+  .admin-past-records-table,
+  .admin-past-records-table tbody,
+  .admin-past-records-row,
+  .admin-past-records-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-past-records-row {
+    padding: 10px 14px;
+  }
+
+  .admin-past-records-report-overlay {
+    padding: 0.5rem;
+  }
+
+  .admin-past-records-report-modal {
+    padding: 1rem;
+    border-radius: 20px;
+  }
+
+  .admin-past-records-report-title-group {
+    align-items: center;
+  }
+
+  .admin-past-records-report-header h2 {
+    font-size: 1.55rem;
+  }
+
+  .admin-past-records-report-actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-past-records-report-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-past-records-table td {
+    padding: 10px 0;
+    border-bottom: 0;
+  }
+
+}

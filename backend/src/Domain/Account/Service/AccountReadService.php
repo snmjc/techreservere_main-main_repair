@@ -1,0 +1,263 @@
+<?php
+
+namespace App\Domain\Account\Service;
+
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
+
+class AccountReadService
+{
+    public function __construct(
+        private readonly Connection $connection,
+        private readonly AccountResponseMapperService $accountResponseMapperService
+    ) {
+    }
+
+    public function getAcceptedAccounts(): array
+    {
+        return $this->fetchAcceptedAccounts();
+    }
+
+    public function getAcceptedAccountsByType(string $accountType): array
+    {
+        return $this->fetchAcceptedAccounts(strtolower(trim($accountType)));
+    }
+
+    private function fetchAcceptedAccounts(?string $accountType = null): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            "WITH accepted_accounts AS (
+                SELECT accounts.account_identifier, accounts.id_number, accounts.last_name, accounts.first_name,
+                       accounts.email_address, accounts.username, accounts.role_designation, accounts.department, accounts.contact_number, accounts.password_hash,
+                       accounts.profile_photo_data,
+                       accounts.signup_supporting_document_name, accounts.signup_supporting_document_mime_type,
+                       accounts.signup_supporting_document_data,
+                       staff_info.employee_id_number AS staff_employee_id_number,
+                       staff_info.first_name AS staff_first_name,
+                       staff_info.last_name AS staff_last_name,
+                       staff_info.phone_number AS staff_phone_number,
+                       staff_info.role AS staff_role,
+                       staff_info.image_url AS staff_image_url,
+                       accounts.status, accounts.is_approved, accounts.is_verified, accounts.verification_status,
+                       accounts.invitation_status, accounts.clerk_user_id, accounts.invited_at, accounts.approved_at, accounts.is_active, accounts.created_timestamp,
+                       accounts.last_login_timestamp,
+                       latest_invitation.created_at AS invite_sent_at,
+                       latest_invitation.expires_at AS invite_expires_at,
+                       latest_invitation.accepted_at AS invite_accepted_at
+                FROM accounts
+                LEFT JOIN staff_info ON staff_info.account_identifier = accounts.account_identifier
+                LEFT JOIN LATERAL (
+                   SELECT created_at, expires_at, accepted_at
+                   FROM invitations
+                   WHERE LOWER(email) = LOWER(accounts.email_address)
+                   ORDER BY created_at DESC
+                   LIMIT 1
+                ) latest_invitation ON TRUE
+                WHERE LOWER(COALESCE(accounts.status, 'pending')) IN ('active', 'approved', 'accepted', 'disabled')
+                  AND (
+                        COALESCE(NULLIF(accounts.clerk_user_id, ''), '') <> ''
+                        OR UPPER(COALESCE(accounts.role_designation, '')) LIKE '%ADMIN%'
+                        OR UPPER(COALESCE(accounts.role_designation, '')) LIKE '%STAFF%'
+                        OR UPPER(COALESCE(accounts.role_designation, '')) LIKE '%EMPLOYEE%'
+                        OR LOWER(COALESCE(accounts.department, '')) LIKE '%admin%'
+                        OR LOWER(COALESCE(accounts.department, '')) LIKE '%staff%'
+                        OR LOWER(COALESCE(accounts.department, '')) LIKE '%employee%'
+                        OR LOWER(COALESCE(accounts.department, '')) LIKE '%maintenance%'
+                        OR LOWER(COALESCE(accounts.department, '')) LIKE '%technical%'
+                        OR LOWER(COALESCE(accounts.department, '')) LIKE '%support%'
+                  )
+                  {$this->resolveAccountTypeSqlFilter($accountType)}
+             ),
+             deduped_by_email AS (
+                SELECT DISTINCT ON (LOWER(email_address)) *
+                FROM accepted_accounts
+                ORDER BY LOWER(email_address), created_timestamp DESC, account_identifier DESC
+             ),
+             deduped_by_id AS (
+                SELECT DISTINCT ON (COALESCE(NULLIF(id_number, ''), account_identifier::text)) *
+                FROM deduped_by_email
+                ORDER BY COALESCE(NULLIF(id_number, ''), account_identifier::text), created_timestamp DESC, account_identifier DESC
+             ),
+             deduped_by_phone AS (
+                SELECT DISTINCT ON (COALESCE(NULLIF(contact_number, ''), account_identifier::text)) *
+                FROM deduped_by_id
+                ORDER BY COALESCE(NULLIF(contact_number, ''), account_identifier::text), created_timestamp DESC, account_identifier DESC
+             )
+             SELECT *
+             FROM deduped_by_phone
+             ORDER BY created_timestamp DESC"
+        );
+
+        return array_map(fn (array $row): array => $this->accountResponseMapperService->mapAccountRow($row), $rows);
+    }
+
+    private function resolveAccountTypeSqlFilter(?string $accountType): string
+    {
+        $adminFilter = "(
+            UPPER(COALESCE(accounts.role_designation, '')) LIKE '%ADMIN%'
+            OR LOWER(COALESCE(accounts.role_designation, '')) = 'admin'
+        )";
+        $employeeFilter = "(
+            UPPER(COALESCE(accounts.role_designation, '')) LIKE '%STAFF%'
+            OR UPPER(COALESCE(accounts.role_designation, '')) LIKE '%EMPLOYEE%'
+            OR LOWER(COALESCE(accounts.department, '')) LIKE '%staff%'
+            OR LOWER(COALESCE(accounts.department, '')) LIKE '%employee%'
+            OR LOWER(COALESCE(accounts.department, '')) LIKE '%technical%'
+            OR LOWER(COALESCE(accounts.department, '')) LIKE '%maintenance%'
+            OR LOWER(COALESCE(accounts.department, '')) LIKE '%support%'
+        )";
+
+        return match ($accountType) {
+            'admin' => "AND {$adminFilter}",
+            'employee' => "AND NOT ({$adminFilter}) AND {$employeeFilter}",
+            'user' => "AND NOT ({$adminFilter}) AND NOT {$employeeFilter}",
+            default => '',
+        };
+    }
+
+    public function countDashboardAccounts(): int
+    {
+        return (int) $this->connection->fetchOne(
+            "SELECT COUNT(*)
+               FROM accounts
+              WHERE LOWER(COALESCE(status, 'pending')) NOT IN ('deleted', 'archived')"
+        );
+    }
+
+    public function getMappedAccountById(int $accountIdentifier): ?array
+    {
+        $row = $this->connection->fetchAssociative(
+            "SELECT accounts.account_identifier, accounts.id_number, accounts.last_name, accounts.first_name, accounts.email_address, accounts.username, accounts.role_designation,
+                    accounts.department, accounts.contact_number, accounts.status, accounts.is_approved, accounts.is_verified, accounts.verification_status,
+                    accounts.invitation_status, accounts.clerk_user_id, accounts.password_hash, accounts.invited_at, accounts.approved_at, accounts.is_active, accounts.created_timestamp,
+                    accounts.profile_photo_data,
+                    accounts.signup_supporting_document_name, accounts.signup_supporting_document_mime_type,
+                    accounts.signup_supporting_document_data,
+                    staff_info.employee_id_number AS staff_employee_id_number,
+                    staff_info.first_name AS staff_first_name,
+                    staff_info.last_name AS staff_last_name,
+                    staff_info.phone_number AS staff_phone_number,
+                    staff_info.role AS staff_role,
+                    staff_info.image_url AS staff_image_url,
+                    accounts.last_login_timestamp,
+                    latest_invitation.created_at AS invite_sent_at,
+                    latest_invitation.expires_at AS invite_expires_at,
+                    latest_invitation.accepted_at AS invite_accepted_at
+             FROM accounts
+             LEFT JOIN staff_info ON staff_info.account_identifier = accounts.account_identifier
+             LEFT JOIN LATERAL (
+                SELECT created_at, expires_at, accepted_at
+                FROM invitations
+                WHERE LOWER(email) = LOWER(accounts.email_address)
+                ORDER BY created_at DESC
+                LIMIT 1
+             ) latest_invitation ON TRUE
+             WHERE accounts.account_identifier = :accountIdentifier",
+            ['accountIdentifier' => $accountIdentifier],
+            ['accountIdentifier' => ParameterType::INTEGER]
+        );
+
+        return $row ? $this->accountResponseMapperService->mapAccountRow($row) : null;
+    }
+
+    public function getSettingsAccountById(int $accountIdentifier): ?array
+    {
+        $row = $this->connection->fetchAssociative(
+            "SELECT accounts.account_identifier, accounts.id_number, accounts.last_name, accounts.first_name, accounts.email_address, accounts.username, accounts.role_designation,
+                    accounts.department, accounts.contact_number, accounts.status, accounts.is_approved, accounts.is_active, accounts.created_timestamp,
+                    accounts.last_login_timestamp, accounts.profile_photo_data, accounts.password_hash,
+                    accounts.signup_supporting_document_name, accounts.signup_supporting_document_mime_type,
+                    accounts.signup_supporting_document_data,
+                    staff_info.employee_id_number AS staff_employee_id_number,
+                    staff_info.first_name AS staff_first_name,
+                    staff_info.last_name AS staff_last_name,
+                    staff_info.phone_number AS staff_phone_number,
+                    staff_info.role AS staff_role,
+                    staff_info.image_url AS staff_image_url
+             FROM accounts
+             LEFT JOIN staff_info ON staff_info.account_identifier = accounts.account_identifier
+             WHERE accounts.account_identifier = :accountIdentifier",
+            ['accountIdentifier' => $accountIdentifier],
+            ['accountIdentifier' => ParameterType::INTEGER]
+        );
+
+        if (!$row) {
+            return null;
+        }
+
+        $mapped = $this->accountResponseMapperService->mapAccountRow($row + [
+            'invite_sent_at' => null,
+            'invite_expires_at' => null,
+            'invite_accepted_at' => null,
+        ]);
+        $mapped['profilePhotoData'] = $row['profile_photo_data'] ? (string)$row['profile_photo_data'] : null;
+
+        return $mapped;
+    }
+
+    public function getEmployeeWorkLogs(int $accountIdentifier): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            "SELECT
+                history_logs.id AS history_log_id,
+                history_logs.staff_id,
+                history_logs.reservation_id,
+                history_logs.task_assignment_id,
+                tasks.task_identifier,
+                tasks.task_title,
+                tasks.task_description,
+                tasks.task_type,
+                tasks.task_status,
+                tasks.assigned_to_account_id,
+                tasks.due_date_timestamp,
+                tasks.created_timestamp,
+                tasks.updated_timestamp,
+                staff_info.employee_id_number AS staff_employee_id_number,
+                staff_info.first_name AS staff_first_name,
+                staff_info.last_name AS staff_last_name,
+                staff_info.role AS staff_role,
+                reservations.reservation_identifier,
+                reservations.reservation_code,
+                reservations.organization_name,
+                reservations.event_date_time,
+                reservations.purpose_description,
+                reservations.activity_type,
+                reservations.current_status AS reservation_status,
+                reservations.requested_equipment_list,
+                reservations.requested_quantity,
+                reservations.priority_level
+             FROM history_logs
+             INNER JOIN staff_info ON staff_info.id = history_logs.staff_id
+             INNER JOIN tasks ON tasks.task_identifier = history_logs.task_assignment_id
+             INNER JOIN reservations ON reservations.reservation_identifier = history_logs.reservation_id
+             WHERE staff_info.account_identifier = :accountIdentifier
+             ORDER BY COALESCE(tasks.due_date_timestamp, tasks.created_timestamp) DESC, history_logs.id DESC",
+            ['accountIdentifier' => $accountIdentifier],
+            ['accountIdentifier' => ParameterType::INTEGER]
+        );
+
+        return array_map(fn (array $row): array => $this->accountResponseMapperService->mapEmployeeWorkLogRow($row), $rows);
+    }
+
+    public function getAccountStateById(int $accountIdentifier): ?array
+    {
+        $account = $this->connection->fetchAssociative(
+            'SELECT account_identifier, id_number, email_address, username, department, clerk_user_id, status, is_approved, is_active
+             FROM accounts
+             WHERE account_identifier = :accountIdentifier',
+            ['accountIdentifier' => $accountIdentifier],
+            ['accountIdentifier' => ParameterType::INTEGER]
+        );
+
+        return $account ?: null;
+    }
+
+    public function hasDuplicateStaffPhone(string $phoneNumber, int $accountIdentifier): bool
+    {
+        return (bool)$this->connection->fetchOne(
+            'SELECT 1 FROM staff_info WHERE phone_number = :phoneNumber AND account_identifier <> :accountIdentifier',
+            ['phoneNumber' => $phoneNumber, 'accountIdentifier' => $accountIdentifier],
+            ['phoneNumber' => ParameterType::STRING, 'accountIdentifier' => ParameterType::INTEGER]
+        );
+    }
+}

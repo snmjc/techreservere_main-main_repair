@@ -1,0 +1,142 @@
+.reservation-documents-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.9fr);
+  gap: 1rem;
+}
+
+.reservation-documents-required,
+.reservation-documents-dropzone {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.reservation-documents-required h3,
+.reservation-documents-dropzone h3 {
+  margin: 0;
+  color: #1a4832;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.reservation-document-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0.9rem;
+  background: #ffffff;
+  border: 1px solid #e3ebe6;
+  border-radius: 10px;
+}
+
+.reservation-document-item strong,
+.reservation-document-item span,
+.reservation-document-item small {
+  display: block;
+}
+
+.reservation-document-item strong {
+  color: #24362d;
+  font-size: 0.78rem;
+}
+
+.reservation-document-item span {
+  margin-top: 0.18rem;
+  color: #0f7a47;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.reservation-document-item-error,
+.reservation-documents-error {
+  color: #b42318;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.reservation-document-item button {
+  min-height: 34px;
+  padding: 0 0.9rem;
+  color: #11864d;
+  background: #ffffff;
+  border: 1px solid #b7dfc6;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.reservation-documents-dropzone-box {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 2rem 1rem;
+  color: #6f8579;
+  text-align: center;
+  border: 1px dashed #cbd9d1;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.reservation-documents-dropzone-box svg {
+  width: 28px;
+  height: 28px;
+}
+
+.reservation-documents-dropzone-box p,
+.reservation-documents-dropzone-box small {
+  margin: 0;
+}
+
+.reservation-documents-dropzone-box p {
+  color: #2d4137;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.reservation-documents-dropzone-box small {
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.reservation-documents-optional-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.reservation-documents-optional-list span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 0.65rem;
+  color: #355043;
+  background: #f3f7f4;
+  border: 1px solid #dce6df;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .reservation-documents-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .reservation-document-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reservation-document-item button {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .reservation-documents-dropzone-box {
+    padding: 1.5rem 0.9rem;
+  }
+}

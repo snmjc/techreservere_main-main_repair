@@ -1,0 +1,323 @@
+/* Borrower reservations landing page */
+
+.my-reservations-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.my-reservations-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.35rem;
+  background:
+    linear-gradient(135deg, rgba(8, 115, 79, 0.95), rgba(5, 46, 36, 0.96)),
+    #08734f;
+  border-radius: 8px;
+  box-shadow: var(--tr-shadow);
+}
+
+.my-reservations-kicker {
+  margin: 0 0 0.35rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.75rem;
+  font-weight: 850;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.my-reservations-hero h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(1.75rem, 4vw, 2.45rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.my-reservations-subtitle {
+  max-width: 620px;
+  margin: 0.5rem 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.96rem;
+}
+
+.my-reservations-primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  color: var(--tr-green-900);
+  background: #ffffff;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 850;
+  white-space: nowrap;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+}
+
+.my-reservations-primary-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.my-reservations-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.my-reservations-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 118px;
+  padding: 1.05rem;
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid var(--tr-border);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: var(--tr-shadow);
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+
+.my-reservations-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(8, 115, 79, 0.28);
+}
+
+.my-reservations-stat-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.my-reservations-stat-icon svg {
+  width: 23px;
+  height: 23px;
+}
+
+.my-reservations-stat-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.my-reservations-stat-copy strong {
+  color: var(--tr-ink);
+  font-size: 1.95rem;
+  line-height: 1;
+  font-weight: 850;
+}
+
+.my-reservations-stat-copy span {
+  margin-top: 0.4rem;
+  color: var(--tr-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.my-reservations-stat-card.my-reservations-stat-card--active .my-reservations-stat-icon {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.my-reservations-stat-card.my-reservations-stat-card--approved .my-reservations-stat-icon {
+  color: #047857;
+  background: #d1fae5;
+}
+
+.my-reservations-stat-card.my-reservations-stat-card--pending .my-reservations-stat-icon {
+  color: #a16207;
+  background: #fef3c7;
+}
+
+.my-reservations-stat-card.my-reservations-stat-card--completed .my-reservations-stat-icon {
+  color: #6d28d9;
+  background: #ede9fe;
+}
+
+.my-reservations-content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr);
+  gap: 1rem;
+}
+
+.my-reservations-panel {
+  min-width: 0;
+  padding: 1.15rem;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--tr-border);
+  border-radius: 8px;
+  box-shadow: var(--tr-shadow);
+}
+
+.my-reservations-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.my-reservations-panel-heading h2 {
+  margin: 0;
+  color: var(--tr-ink);
+  font-size: 1rem;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.my-reservations-panel-heading p {
+  margin: 0.25rem 0 0;
+  color: var(--tr-muted);
+  font-size: 0.8rem;
+}
+
+.my-reservations-timeline {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.my-reservations-timeline-step {
+  position: relative;
+  min-height: 150px;
+  padding: 1rem;
+  background: var(--tr-page);
+  border: 1px solid var(--tr-border);
+  border-radius: 8px;
+  transition: background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.my-reservations-timeline-step:hover {
+  background: #f1fbf6;
+  border-color: rgba(8, 115, 79, 0.32);
+}
+
+.my-reservations-timeline-step span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 0.85rem;
+  color: var(--tr-muted);
+  background: #ffffff;
+  border: 1px solid var(--tr-border);
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 850;
+}
+
+.my-reservations-timeline-step strong {
+  display: block;
+  color: var(--tr-ink);
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.my-reservations-timeline-step p {
+  margin: 0.35rem 0 0;
+  color: var(--tr-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.my-reservations-timeline-step.is-complete span,
+.my-reservations-timeline-step.is-current span,
+.my-reservations-timeline-step:nth-child(3) span,
+.my-reservations-timeline-step:nth-child(4) span {
+  color: #ffffff;
+  background: var(--tr-green-700);
+  border-color: var(--tr-green-700);
+}
+
+.my-reservations-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.my-reservations-action-list button {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.75rem;
+  color: var(--tr-ink);
+  text-align: left;
+  background: var(--tr-page);
+  border: 1px solid var(--tr-border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.my-reservations-action-list button:hover {
+  border-color: rgba(8, 115, 79, 0.32);
+  background: #ffffff;
+}
+
+.my-reservations-action-list button .my-reservations-action-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  color: #ffffff;
+  background: var(--tr-green-700);
+  border-radius: 50%;
+  font-weight: 850;
+}
+
+.my-reservations-action-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.my-reservations-page-footer {
+  margin: 0.25rem 0 0;
+  color: var(--tr-muted);
+  text-align: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1180px) {
+  .my-reservations-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .my-reservations-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .my-reservations-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .my-reservations-primary-action {
+    width: 100%;
+  }
+
+  .my-reservations-overview,
+  .my-reservations-timeline {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,88 @@
+import { ref, onMounted } from 'vue';
+import equipmentApi from '@/modules/reservation/services/equipmentApi.js';
+import venueApi from '@/modules/reservation/services/venueApi.js';
+
+export function useReservationData() {
+  const equipmentList = ref([]);
+  const venueList = ref([]);
+  const isLoading = ref(false);
+  const error = ref(null);
+
+  async function fetchEquipment() {
+    try {
+      isLoading.value = true;
+      error.value = null;
+      const response = await equipmentApi.listEquipment();
+      const equipment = response?.data?.equipment || [];
+      equipmentList.value = equipment.map(eq => ({
+          equipmentIdentifier: eq.equipmentIdentifier,
+          equipmentName: eq.equipmentName,
+          categoryName: eq.categoryName,
+          equipmentCategory: eq.equipmentCategory || eq.categoryName,
+          equipmentBrand: eq.equipmentBrand,
+          totalQuantity: eq.totalQuantity,
+          availableQuantity: eq.availableQuantity,
+          operationalStatus: eq.operationalStatus,
+          equipmentState: eq.equipmentState,
+          description: eq.description || eq.scheduleDescription || '',
+          scheduleDescription: eq.scheduleDescription || eq.description || '',
+          barcode: eq.barcode || '',
+          assetId: eq.assetId || eq.serialNumber || '',
+          serialNumber: eq.serialNumber || eq.assetId || '',
+          photoData: eq.photoData || null,
+          photoDisplayMode: eq.photoDisplayMode || 'contain',
+          photoPositionX: eq.photoPositionX ?? 50,
+          photoPositionY: eq.photoPositionY ?? 50,
+        }));
+    } catch (err) {
+      error.value = err.message || 'Failed to fetch equipment';
+      console.error('Equipment fetch error:', err);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function fetchVenues(options = {}) {
+    try {
+      isLoading.value = true;
+      error.value = null;
+      const response = await venueApi.listVenues(options);
+      const venues = response?.data?.venues || response?.venues || [];
+      if (Array.isArray(venues)) {
+        venueList.value = venues.map(venue => ({
+          venueIdentifier: venue.venueIdentifier,
+          venueName: venue.venueName,
+          venueLocation: venue.venueLocation,
+          floorLevel: venue.floorLevel,
+          capacityLimit: venue.capacityLimit,
+          availabilityDate: venue.availabilityDate,
+          availabilityStatus: venue.availabilityStatus,
+          operationalStatus: venue.operationalStatus || 'Active',
+          description: venue.description || '',
+          imageUrl: venue.imageUrl || '',
+          reservationTimeRanges: venue.reservationTimeRanges || [],
+          venueState: venue.availabilityStatus === 'Available' ? 'Available' : 'Unavailable',
+        }));
+      }
+    } catch (err) {
+      error.value = err.message || 'Failed to fetch venues';
+      console.error('Venue fetch error:', err);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function loadAllData(options = {}) {
+    await Promise.all([fetchEquipment(), fetchVenues(options)]);
+  }
+
+  return {
+    equipmentList,
+    venueList,
+    isLoading,
+    error,
+    fetchEquipment,
+    fetchVenues,
+    loadAllData,
+  };
+}

@@ -1,0 +1,674 @@
+<template>
+  <div v-if="show" class="equipment-modal-overlay" @click="handleOverlayClick">
+    <section class="equipment-modal-card" @click.stop>
+      <header class="equipment-modal-header">
+        <h2>{{ isEditMode ? 'Edit Equipment' : 'Add Equipment' }}</h2>
+        <button class="equipment-modal-close" type="button" :disabled="isSaving" aria-label="Close" @click="handleCancel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="equipment-modal-body">
+        <div class="equipment-modal-grid">
+          <label class="equipment-modal-field">
+            <span>Equipment Name <em>*</em></span>
+            <input
+              v-model.trim="formData.equipmentName"
+              type="text"
+              maxlength="150"
+              placeholder="Enter equipment name"
+            />
+          </label>
+
+          <label class="equipment-modal-field">
+            <span>Equipment Type/Category <em>*</em></span>
+            <select v-model="formData.equipmentCategory">
+              <option value="">Select equipment type/category</option>
+              <option v-for="option in categoryOptions" :key="option" :value="option">{{ option }}</option>
+            </select>
+          </label>
+
+          <label class="equipment-modal-field">
+            <span>Equipment Brand <em>*</em></span>
+            <input
+              v-model.trim="formData.equipmentBrand"
+              type="text"
+              maxlength="100"
+              placeholder="Enter brand"
+            />
+          </label>
+
+          <label class="equipment-modal-field">
+            <span>Available Quantity <em>*</em></span>
+            <div class="equipment-modal-input-with-suffix">
+              <input
+                v-model.number="formData.availableQuantity"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="Enter quantity"
+              />
+              <small>units</small>
+            </div>
+          </label>
+
+          <label class="equipment-modal-field">
+            <span>Operational Status (Status) <em>*</em></span>
+            <select v-model="formData.operationalStatus">
+              <option value="">Select status</option>
+              <option v-for="status in equipmentStatuses" :key="status" :value="status">{{ status }}</option>
+            </select>
+          </label>
+
+          <label class="equipment-modal-field equipment-modal-field--full">
+            <span>Description <em>*</em></span>
+            <textarea
+              v-model.trim="formData.description"
+              rows="4"
+              placeholder="Enter equipment description"
+            />
+          </label>
+
+          <label class="equipment-modal-field">
+            <span>QR Code</span>
+            <input
+              :value="formData.barcode || generatedInventoryPreview.barcode"
+              type="text"
+              maxlength="120"
+              readonly
+              placeholder="Generated 5-digit QR"
+            />
+            <small>Automatically generated from the category code and next available sequence.</small>
+          </label>
+
+          <label class="equipment-modal-field">
+            <span>Asset ID</span>
+            <input
+              :value="formData.assetId || generatedInventoryPreview.assetId"
+              type="text"
+              maxlength="16"
+              readonly
+              placeholder="Generated on save"
+            />
+            <small>Format: <code>F123-456-789</code> using category and sequence rules. Existing IDs stay unchanged when editing.</small>
+          </label>
+
+          <label class="equipment-modal-field equipment-modal-field--full">
+            <span>Photo of Equipment</span>
+            <input
+              ref="photoInputRef"
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+              @change="handlePhotoFileChange"
+            />
+            <small>Optional. Accepted formats: JPG, PNG, and WebP. Wider images work best for the equipment cards.</small>
+          </label>
+
+          <div class="equipment-modal-field equipment-modal-field--full">
+            <span>Photo Preview</span>
+            <div class="equipment-modal-photo-preview">
+              <img
+                :src="photoPreviewSource"
+                :alt="`${formData.equipmentName || 'Equipment'} photo preview`"
+                :style="photoPreviewStyle"
+              />
+            </div>
+          </div>
+
+          <div class="equipment-modal-field equipment-modal-field--full">
+            <span>Photo Display Settings</span>
+            <div class="equipment-modal-photo-controls">
+              <label class="equipment-modal-photo-control">
+                <strong>Card fit</strong>
+                <select v-model="formData.photoDisplayMode">
+                  <option value="contain">Fit whole image</option>
+                  <option value="cover">Fill card</option>
+                </select>
+              </label>
+
+              <label class="equipment-modal-photo-control">
+                <strong>Horizontal focus</strong>
+                <input v-model.number="formData.photoPositionX" type="range" min="0" max="100" step="1" />
+                <small>{{ formData.photoPositionX }}%</small>
+              </label>
+
+              <label class="equipment-modal-photo-control">
+                <strong>Vertical focus</strong>
+                <input v-model.number="formData.photoPositionY" type="range" min="0" max="100" step="1" />
+                <small>{{ formData.photoPositionY }}%</small>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <p v-if="errorMessage" class="equipment-modal-error">{{ errorMessage }}</p>
+      </div>
+
+      <footer class="equipment-modal-footer">
+        <button class="equipment-modal-button equipment-modal-button--cancel" type="button" :disabled="isSaving" @click="handleCancel">
+          Cancel
+        </button>
+        <button class="equipment-modal-button equipment-modal-button--save" type="button" :disabled="isSaving" @click="handleSave">
+          {{ isSaving ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Add Equipment') }}
+        </button>
+      </footer>
+    </section>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue';
+import equipmentApi from '@/modules/reservation/services/equipmentApi.js';
+import {
+  normalizeEquipmentForm,
+  readPhotoFileAsDataUrl,
+  validateEquipmentForm,
+  validateEquipmentPhotoFile,
+} from '@/modules/facility/utils/equipmentFormValidation.js';
+import {
+  resolveEquipmentPhoto,
+  resolveEquipmentPhotoStyle,
+} from '@/modules/facility/utils/equipmentPresentation.js';
+
+const equipmentStatuses = ['Available', 'Unavailable', 'Under Maintenance', 'Retired'];
+const defaultCategories = [
+  'Audio / Microphone',
+  'Audio',
+  'Furniture',
+  'Presentation',
+  'Accessories',
+  'Electrical',
+  'Setup',
+  'Decor',
+  'Display',
+  'Miscellaneous',
+];
+
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false,
+  },
+  equipment: {
+    type: Object,
+    default: null,
+  },
+});
+
+const emit = defineEmits(['close', 'saved']);
+
+const isSaving = ref(false);
+const errorMessage = ref('');
+const formData = ref(createEmptyForm());
+const photoInputRef = ref(null);
+const isEditMode = computed(() => Boolean(props.equipment?.equipmentIdentifier));
+
+const categoryOptions = computed(() => {
+  const currentCategory = String(formData.value.equipmentCategory || '').trim();
+  return [...new Set([...defaultCategories, currentCategory].filter(Boolean))];
+});
+
+const generatedInventoryPreview = computed(() => buildGeneratedInventoryPreview(formData.value.equipmentCategory));
+
+const photoPreviewSource = computed(() => {
+  if (formData.value.photoData) {
+    return formData.value.photoData;
+  }
+
+  return resolveEquipmentPhoto(props.equipment || formData.value);
+});
+
+const photoPreviewStyle = computed(() => resolveEquipmentPhotoStyle(formData.value));
+
+watch(
+  () => props.show,
+  (isVisible) => {
+    if (isVisible) {
+      hydrateFromEquipment(props.equipment);
+      return;
+    }
+
+    resetFormState();
+  }
+);
+
+watch(
+  () => props.equipment,
+  (equipmentRecord) => {
+    if (props.show) {
+      hydrateFromEquipment(equipmentRecord);
+    }
+  }
+);
+
+function handleOverlayClick() {
+  handleCancel();
+}
+
+function handleCancel() {
+  if (isSaving.value) return;
+  resetFormState();
+  emit('close');
+}
+
+async function handleSave() {
+  if (isSaving.value) return;
+
+  const validationMessage = validateEquipmentForm(formData.value);
+  if (validationMessage) {
+    errorMessage.value = validationMessage;
+    return;
+  }
+
+  try {
+    isSaving.value = true;
+    errorMessage.value = '';
+    if (isEditMode.value && props.equipment?.equipmentIdentifier) {
+      await equipmentApi.updateEquipment(props.equipment.equipmentIdentifier, normalizeEquipmentForm(formData.value));
+    } else {
+      await equipmentApi.createEquipment(normalizeEquipmentForm(formData.value));
+    }
+    emit('saved');
+    emit('close');
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.errorMessage || 'Failed to save equipment. Please try again.';
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+async function handlePhotoFileChange(event) {
+  const [selectedFile] = Array.from(event?.target?.files || []);
+  const photoValidationMessage = validateEquipmentPhotoFile(selectedFile);
+  if (photoValidationMessage) {
+    errorMessage.value = photoValidationMessage;
+    resetPhotoInput();
+    return;
+  }
+
+  if (!selectedFile) {
+    formData.value = {
+      ...formData.value,
+      photoData: null,
+    };
+    return;
+  }
+
+  try {
+    errorMessage.value = '';
+    const encodedPhoto = await readPhotoFileAsDataUrl(selectedFile);
+    formData.value = {
+      ...formData.value,
+      photoData: encodedPhoto,
+    };
+  } catch (error) {
+    errorMessage.value = error?.message || 'Unable to read the selected equipment photo.';
+    resetPhotoInput();
+  }
+}
+
+function hydrateFromEquipment(equipmentRecord) {
+  errorMessage.value = '';
+  formData.value = equipmentRecord
+    ? {
+        equipmentName: equipmentRecord.equipmentName || '',
+        equipmentCategory: equipmentRecord.equipmentCategory || equipmentRecord.categoryName || '',
+        equipmentBrand: equipmentRecord.equipmentBrand || '',
+        availableQuantity: Number(equipmentRecord.availableQuantity ?? equipmentRecord.totalQuantity ?? 1),
+        operationalStatus: normalizeStatusValue(equipmentRecord.operationalStatus || equipmentRecord.equipmentState),
+        description: equipmentRecord.description || equipmentRecord.scheduleDescription || '',
+        barcode: equipmentRecord.barcode || '',
+        assetId: equipmentRecord.assetId || equipmentRecord.serialNumber || '',
+        photoData: equipmentRecord.photoData || null,
+        photoDisplayMode: equipmentRecord.photoDisplayMode || 'contain',
+        photoPositionX: Number(equipmentRecord.photoPositionX ?? 50),
+        photoPositionY: Number(equipmentRecord.photoPositionY ?? 50),
+      }
+    : createEmptyForm();
+
+  resetPhotoInput();
+}
+
+function createEmptyForm() {
+  return {
+    equipmentName: '',
+    equipmentCategory: '',
+    equipmentBrand: '',
+    availableQuantity: 1,
+    operationalStatus: 'Available',
+    description: '',
+    barcode: '',
+    assetId: '',
+    photoData: null,
+    photoDisplayMode: 'contain',
+    photoPositionX: 50,
+    photoPositionY: 50,
+  };
+}
+
+function resetFormState() {
+  formData.value = createEmptyForm();
+  errorMessage.value = '';
+  resetPhotoInput();
+}
+
+function normalizeStatusValue(statusValue) {
+  return statusValue === 'Active'
+    ? 'Available'
+    : statusValue === 'Maintenance'
+      ? 'Under Maintenance'
+      : statusValue === 'Inactive'
+        ? 'Unavailable'
+        : (statusValue || 'Available');
+}
+
+function resetPhotoInput() {
+  if (photoInputRef.value) {
+    photoInputRef.value.value = '';
+  }
+}
+
+function buildGeneratedInventoryPreview(category) {
+  const assetCategoryPrefix = resolveAssetCategoryPrefix(category);
+  const barcodeCategoryPrefix = String(Math.max(10, Math.min(99, Math.floor(assetCategoryPrefix / 10)))).padStart(2, '0');
+
+  return {
+    assetId: `F${String(assetCategoryPrefix).padStart(3, '0')}-000-###`,
+    barcode: `${barcodeCategoryPrefix}###`,
+  };
+}
+
+function resolveAssetCategoryPrefix(category) {
+  const normalizedCategory = String(category || '').trim().toLowerCase();
+
+  switch (normalizedCategory) {
+    case 'audio / microphone':
+    case 'audio':
+      return 100;
+    case 'furniture':
+      return 200;
+    case 'presentation':
+      return 300;
+    case 'accessories':
+      return 400;
+    case 'electrical':
+      return 500;
+    case 'setup':
+      return 600;
+    case 'decor':
+      return 700;
+    case 'display':
+      return 800;
+    case 'miscellaneous':
+      return 900;
+    default:
+      return buildFallbackAssetCategoryPrefix(category);
+  }
+}
+
+function buildFallbackAssetCategoryPrefix(category) {
+  const normalizedCategory = String(category || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!normalizedCategory) {
+    return 990;
+  }
+
+  const firstCharacter = normalizedCategory[0];
+  const characterCode = /[A-Z]/.test(firstCharacter)
+    ? firstCharacter.charCodeAt(0) - 'A'.charCodeAt(0) + 1
+    : Number(firstCharacter);
+  return 900 + Math.max(1, Math.min(89, Number.isFinite(characterCode) ? characterCode : 90));
+}
+</script>
+
+<style scoped>
+.equipment-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.equipment-modal-card {
+  display: flex;
+  flex-direction: column;
+  width: min(600px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: auto;
+  background: #ffffff;
+  border: 1px solid #dde6e0;
+  border-radius: 12px;
+  box-shadow: 0 24px 56px rgba(15, 23, 42, 0.2);
+}
+
+.equipment-modal-header,
+.equipment-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+}
+
+.equipment-modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #ffffff;
+  border-bottom: 1px solid #e6ede8;
+}
+
+.equipment-modal-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  justify-content: flex-end;
+  background: #ffffff;
+  border-top: 1px solid #e6ede8;
+}
+
+.equipment-modal-header h2 {
+  margin: 0;
+  color: #24362d;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.equipment-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: #687c70;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.equipment-modal-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.equipment-modal-body {
+  overflow: auto;
+  padding: 0.95rem 1.1rem 1.1rem;
+}
+
+.equipment-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 0.85rem;
+}
+
+.equipment-modal-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.equipment-modal-field--full {
+  grid-column: 1 / -1;
+}
+
+.equipment-modal-field span {
+  color: #42584d;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.equipment-modal-field em {
+  color: #dc2626;
+  font-style: normal;
+}
+
+.equipment-modal-field input,
+.equipment-modal-field select,
+.equipment-modal-field textarea {
+  width: 100%;
+  min-height: 38px;
+  padding: 0.58rem 0.72rem;
+  color: #22362c;
+  background: #ffffff;
+  border: 1px solid #d8e1db;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.equipment-modal-field textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.equipment-modal-input-with-suffix {
+  position: relative;
+}
+
+.equipment-modal-input-with-suffix input {
+  padding-right: 3.2rem;
+}
+
+.equipment-modal-input-with-suffix small {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  color: #8a9a90;
+  font-size: 0.68rem;
+  pointer-events: none;
+}
+
+.equipment-modal-field > small {
+  color: #8a9a90;
+  font-size: 0.61rem;
+  font-weight: 700;
+}
+
+.equipment-modal-photo-preview {
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  max-height: 170px;
+  border: 1px solid #d8e1db;
+  border-radius: 12px;
+  background: #f4f8f5;
+}
+
+.equipment-modal-photo-preview img {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  height: 160px;
+}
+
+.equipment-modal-photo-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.equipment-modal-photo-control {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  background: #f7faf8;
+  border: 1px solid #d8e1db;
+  border-radius: 10px;
+}
+
+.equipment-modal-photo-control strong {
+  color: #42584d;
+  font-size: 0.68rem;
+}
+
+.equipment-modal-photo-control small {
+  color: #6b7f73;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.equipment-modal-error {
+  margin: 1rem 0 0;
+  padding: 0.8rem 0.9rem;
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.equipment-modal-button {
+  min-height: 36px;
+  padding: 0 0.95rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.equipment-modal-button--cancel {
+  color: #355043;
+  background: #ffffff;
+  border: 1px solid #d8e1db;
+}
+
+.equipment-modal-button--save {
+  color: #ffffff;
+  background: linear-gradient(135deg, #109451, #0c7b43);
+  border: 1px solid #0c7b43;
+}
+
+@media (hover: hover) {
+  .equipment-modal-close:hover {
+    color: #2f4a3d;
+    background: #f3f7f4;
+  }
+}
+
+.equipment-modal-button:disabled,
+.equipment-modal-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .equipment-modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .equipment-modal-photo-controls {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
