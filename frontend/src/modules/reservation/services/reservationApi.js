@@ -40,7 +40,7 @@ const reservationApi = {
     }
   },
 
-  async listReservations() {
+  async listReservations(filters = {}) {
     const authToken = await resolveAuthToken();
 
     // If the user is logged out, avoid calling protected endpoints.
@@ -50,7 +50,8 @@ const reservationApi = {
     
     try {
       const response = await axios.get(apiUrl('/api/v1/reservations'), {
-        headers: buildAuthorizationHeaders(authToken)
+        headers: buildAuthorizationHeaders(authToken),
+        params: filters,
       });
       return response.data;
     } catch (error) {

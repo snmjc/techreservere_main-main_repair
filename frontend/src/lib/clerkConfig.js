@@ -6,16 +6,32 @@ const PLACEHOLDER_CLERK_KEYS = new Set([
 const LEGACY_CLERK_DOMAIN = 'clerk.farahkenawy.codes'
 
 export function decodeClerkDomain(publishableKey) {
-  const encodedDomain = publishableKey.split('_').slice(2).join('_')
+  if (typeof publishableKey !== 'string' || !/^pk_(test|live)_/.test(publishableKey)) {
+    return ''
+  }
+
+  const encodedDomain = publishableKey.slice(publishableKey.indexOf('_', 3) + 1)
 
   if (!encodedDomain) {
     return ''
   }
 
   try {
-    return atob(encodedDomain).replace(/\$$/, '')
-  } catch (error) {
-    console.error('Unable to decode the Clerk publishable key domain.', error)
+    // Clerk keys encode the frontend API domain with base64. Accept URL-safe
+    // base64 and omitted padding as well as the standard alphabet.
+    const base64 = encodedDomain.replace(/-/g, '+').replace(/_/g, '/')
+    const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
+    const decodedValue = atob(paddedBase64)
+    const decodedDomain = decodedValue.endsWith('$')
+      ? decodedValue.slice(0, -1)
+      : decodedValue
+
+    if (!/^[a-z0-9.-]+$/i.test(decodedDomain) || !decodedDomain.includes('.')) {
+      return ''
+    }
+
+    return decodedDomain
+  } catch {
     return ''
   }
 }
@@ -37,6 +53,13 @@ export function resolveClerkPublishableKey() {
   }
 
   const configuredDomain = decodeClerkDomain(configuredKey)
+  if (!configuredDomain) {
+    console.error(
+      'VITE_CLERK_PUBLISHABLE_KEY is not a valid Clerk publishable key. Set it in frontend/.env.local (or the root .env.dev when using Docker) using the value from your Clerk development instance.',
+    )
+    return ''
+  }
+
   if (configuredDomain === LEGACY_CLERK_DOMAIN) {
     console.error(
       `Configured Clerk domain ${LEGACY_CLERK_DOMAIN} is no longer used. Set VITE_CLERK_PUBLISHABLE_KEY to the active Clerk domain before starting the frontend.`,

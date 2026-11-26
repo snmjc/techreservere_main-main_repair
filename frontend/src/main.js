@@ -5,41 +5,12 @@ import App from './App.vue'
 import applicationRouter from './router/index.js'
 import { clerkPlugin } from '@clerk/vue'
 import { resolveClerkRedirectOptions } from './modules/authentication/utils/clerkRedirects.js'
-
-const PLACEHOLDER_CLERK_KEYS = new Set([
-  'pk_test_your_clerk_key_here',
-  'your_clerk_publishable_key_here',
-])
-
-function resolveClerkPublishableKey() {
-  const configuredKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim()
-
-  if (!configuredKey || PLACEHOLDER_CLERK_KEYS.has(configuredKey)) {
-    return ''
-  }
-
-  return configuredKey
-}
-
-function decodeClerkDomain(publishableKey) {
-  const encodedDomain = publishableKey.split('_').slice(2).join('_')
-
-  if (!encodedDomain) {
-    return ''
-  }
-
-  try {
-    return atob(encodedDomain).replace(/\$$/, '')
-  } catch (error) {
-    console.error('Unable to decode the Clerk publishable key domain.', error)
-    return ''
-  }
-}
+import { decodeClerkDomain, resolveClerkPublishableKey } from './lib/clerkConfig.js'
 
 const PUBLISHABLE_KEY = resolveClerkPublishableKey()
 
 if (!PUBLISHABLE_KEY) {
-  throw new Error('Add VITE_CLERK_PUBLISHABLE_KEY to the frontend environment before building.')
+  throw new Error('Set a valid VITE_CLERK_PUBLISHABLE_KEY from your Clerk development instance before starting the frontend.')
 }
 
 const LIVE_FRONTEND_HOSTS = new Set([

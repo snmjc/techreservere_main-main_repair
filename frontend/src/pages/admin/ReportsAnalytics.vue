@@ -401,18 +401,7 @@
       </div>
 
       <div class="reports-actions">
-        <p v-if="pdfError" class="reports-inline-message is-error">{{ pdfError }}</p>
         <p v-if="analyticsToastMessage" class="reports-inline-message is-success">{{ analyticsToastMessage }}</p>
-        <button class="reports-generate-button" type="button" :disabled="isExporting || isReportsLoading" @click="handleGeneratePdf">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-            <path d="M14 2v6h6" />
-            <path d="M9 15h6" />
-            <path d="M9 18h6" />
-          </svg>
-          {{ isExporting ? 'Generating PDF...' : 'Generate PDF Report' }}
-        </button>
-
         <button
           class="reports-trigger-button reports-trigger-button--bottom"
           type="button"

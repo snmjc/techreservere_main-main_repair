@@ -57,6 +57,11 @@ export const adminNavigationItems = [
     iconSvg: `<svg ${iconAttributes}><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-7"/><path d="M19 7v5h-5"/></svg>`,
   },
   {
+    routeName: ROUTE_NAMES.adminPdfReportStudio,
+    label: 'PDF Report Studio',
+    iconSvg: `<svg ${iconAttributes}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/></svg>`,
+  },
+  {
     routeName: 'adminSupportCenterPage',
     label: 'Support Center',
     iconSvg: `<svg ${iconAttributes}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M9 9h6"/><path d="M9 13h4"/></svg>`,
